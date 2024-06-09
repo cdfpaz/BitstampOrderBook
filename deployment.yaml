@@ -23,6 +23,7 @@ kind: Service
 metadata:
   name: mongodb
 spec:
+  type: NodePort
   selector:
     app: mongodb
   ports:
@@ -44,6 +45,10 @@ spec:
       labels:
         app: bitstamp-feeder
     spec:
+      initContainers:
+      - name: wait-for-mongodb
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w30 mongodb 27017; do echo "waiting for mongodb"; sleep 5; done']
       containers:
       - name: bitstamp-feeder
         image: bzero/bitstamp-feeder:latest 
