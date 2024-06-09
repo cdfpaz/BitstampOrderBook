@@ -64,12 +64,12 @@ namespace Bitstamp.FeederServices
             _webSocketService.Start();
         }
 
-        public void ShowPrices()
+        public async Task ShowPricesAsync()
         {
             Console.WriteLine($"Market summary at {DateTime.Now}");
             foreach (var pair in _subscribeItems)
             {
-                _repository.Summary(pair);
+                await _repository.SummaryAsync(pair);
             }
         }
     }

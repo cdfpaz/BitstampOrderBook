@@ -19,7 +19,10 @@ orderBookService.Start();
 
 while (true)
 {
-    orderBookService.ShowPrices();
+
+    Task task = orderBookService.ShowPricesAsync();
+    task.Wait();
+
     Thread.Sleep(5000);
 }
 
