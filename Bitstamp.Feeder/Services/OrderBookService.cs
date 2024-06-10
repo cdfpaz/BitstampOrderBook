@@ -6,15 +6,15 @@ namespace Bitstamp.FeederServices
     public class OrderBookService
     {
         private readonly WebSocketService _webSocketService;
-        private readonly OrderBookRepository _repository;
+        private readonly MarketDataRepository _repository;
 
         private List<string> _subscribeItems = new();
 
         public OrderBookService(IConfiguration config)
         {
-            var connectionString = config["StoreDatabase:ConnectionString"];
-            var databaseName = config["StoreDatabase:DatabaseName"];
-            var collectionName = config["StoreDatabase:CollectionName"];
+            var connectionString = config["Data:ConnectionString"];
+            var databaseName = config["Data:MarketData:DatabaseName"];
+            var collectionName = config["Data:MarketData:CollectionName"];
 
             if (string.IsNullOrEmpty(connectionString) 
                 || string.IsNullOrEmpty(databaseName) 
@@ -48,7 +48,7 @@ namespace Bitstamp.FeederServices
                 throw new Exception("No symbols to subscribe");
             }
 
-            _repository = new OrderBookRepository(connectionString, databaseName, collectionName);
+            _repository = new MarketDataRepository(connectionString, databaseName, collectionName);
 
             _webSocketService = new WebSocketService(url, _subscribeItems);
             _webSocketService.OnOrderBookUpdate += OrderBookUpdate;

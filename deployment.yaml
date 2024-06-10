@@ -52,3 +52,25 @@ spec:
       containers:
       - name: bitstamp-feeder
         image: bzero/bitstamp-feeder:latest 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi
+spec:
+  selector:
+    matchLabels:
+      app: webapi
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: webapi
+    spec:
+      initContainers:
+      - name: wait-for-mongodb
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w30 mongodb 27017; do echo "waiting for mongodb"; sleep 5; done']
+      containers:
+      - name: webapi
+        image: bzero/webapi:latest 
