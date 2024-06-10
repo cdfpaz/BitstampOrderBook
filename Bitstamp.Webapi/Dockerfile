@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 WORKDIR /App
 
 # Copy everything
-COPY ./Bitstamp.Feeder/. ./
+COPY ./Bitstamp.Webapi/. ./
 ADD Bitstamp.Domain /Bitstamp.Domain
 
 # Restore as distinct layers
