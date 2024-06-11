@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi
+spec:
+  selector:
+    matchLabels:
+      app: webapi
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: webapi
+    spec:
+      initContainers:
+      - name: wait-for-mongodb
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w30 mongodb 27017; do echo "waiting for mongodb"; sleep 5; done']
+      containers:
+      - name: webapi
+        image: bzero/webapi:latest 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapi-service
+spec:
+  selector:
+    app: webapi
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+  type: NodePort

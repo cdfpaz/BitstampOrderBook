@@ -130,7 +130,7 @@ namespace Bitstamp.Domain.Data
                         sb.Append($" -> {symbol}: High {minBid.ToString("0.00", CultureInfo.InvariantCulture)}, ");
                         sb.Append($"Low {maxAsk.ToString("0.00", CultureInfo.InvariantCulture)}, ");
                         sb.Append($"Avg Bid Qty: {averageBid.ToString("0.00", CultureInfo.InvariantCulture)}, ");
-                        sb.Append($"Avg Ask Qty: {averageAsk.ToString("0.00", CultureInfo.InvariantCulture)}");
+                        sb.Append($"Avg Ask Qty: {averageAsk.ToString("0.00", CultureInfo.InvariantCulture)}, ");
 
                         Task task = PrintLast5s(symbol, sb);
                         task.Wait();

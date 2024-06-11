@@ -8,7 +8,6 @@ namespace webapi.Controllers;
 [Route("[controller]")]
 public class EntrypointController : ControllerBase
 {
-
     private readonly OrdersRepository _repository;
 
     public EntrypointController(IConfiguration config)

@@ -2,9 +2,7 @@ using MongoDB.Driver;
 using Bitstamp.Domain.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
-using System.Text;
 using System.Globalization;
-using System.Drawing;
 
 namespace Bitstamp.Domain.Data
 {
@@ -12,6 +10,8 @@ namespace Bitstamp.Domain.Data
     {
         private readonly IMongoCollection<BsonDocument> _marketDataCollection;
         private readonly IMongoCollection<BsonDocument> _orderCollection;
+
+        private int _orderId = 0;
 
         public OrdersRepository(string? ConnectionString, string? DatabaseName, string? CollectionName, string? MarketDatabaseName, string? MarketCollectionName)
         {
@@ -36,63 +36,81 @@ namespace Bitstamp.Domain.Data
 
             if (!collectionExists)
             {
-                marketDataDB.CreateCollection(CollectionName);
+                ordersDB.CreateCollection(CollectionName);
             }
 
-            _orderCollection = marketDataDB.GetCollection<BsonDocument>(MarketCollectionName);
+            _orderCollection = ordersDB.GetCollection<BsonDocument>(CollectionName);
         }
 
         public async Task<IResponse> Match(Order request)
         {
+            _orderCollection.InsertOne(request.ToBsonDocument());
+
             if (_marketDataCollection != null)
             {
-                var filter = Builders<BsonDocument>.Filter.Eq("channel", $"order_book_{request.Symbol}");
-                var sort = Builders<BsonDocument>.Sort.Descending("_id");
-
                 decimal totalValue = 0m;
                 decimal accumulatedQuantity = 0m;
 
-                var result = _marketDataCollection.Find(filter).Sort(sort).Limit(1);
-                await result.ForEachAsync(d => {
-                    try
-                    {
-                        var orderBook = BsonSerializer.Deserialize<OrderBook>(d);
+                var filter = Builders<BsonDocument>.Filter.Eq("channel", $"order_book_{request.Symbol}");
+                var sort = Builders<BsonDocument>.Sort.Descending("_id");
 
-                        var orderBookData = orderBook.Data;
-                        var orderList = request.Side == 0 ? orderBookData.Bids : orderBookData.Asks;
-
-                        foreach (var order in orderList)
+                var count = await _marketDataCollection.CountDocumentsAsync(filter);
+                if ( count > 0)
+                {
+                    List<List<string>> Trades = new();
+                    var result = _marketDataCollection.Find(filter).Sort(sort).Limit(1);
+                    await result.ForEachAsync(d => {
+                        try
                         {
-                            decimal price = decimal.Parse(order[0]);
-                            decimal orderQuantity = decimal.Parse(order[1]);
+                            var orderBook = BsonSerializer.Deserialize<OrderBook>(d);
 
-                            if (accumulatedQuantity + orderQuantity >= request.Qty)
+                            var orderBookData = orderBook.Data;
+                            var orderList = request.Side == 0 ? orderBookData.Bids : orderBookData.Asks;
+
+                            foreach (var order in orderList)
                             {
-                                decimal remainingQuantity = request.Qty - accumulatedQuantity;
-                                totalValue += remainingQuantity * price;
-                                break;
-                            }
-                            else
-                            {
-                                totalValue += orderQuantity * price;
-                                accumulatedQuantity += orderQuantity;
+                                decimal price = decimal.Parse(order[0]);
+                                decimal orderQuantity = decimal.Parse(order[1]);
+
+                                Trades.Add(order);
+                                if (accumulatedQuantity + orderQuantity >= request.Qty)
+                                {
+                                    decimal remainingQuantity = request.Qty - accumulatedQuantity;
+                                    totalValue += remainingQuantity * price;
+                                    break;
+                                }
+                                else
+                                {
+                                    totalValue += orderQuantity * price;
+                                    accumulatedQuantity += orderQuantity;
+                                }
                             }
                         }
-                    }
-                    catch (Exception e)
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    });
+                    _orderId++;
+                    return new BuySellOrderResponse
                     {
-                        Console.WriteLine(e);
-                    }
-                });
-
-                return new BuySellOrderResponse
+                        Id = $"orderId {_orderId}",
+                        Market = request.Symbol,
+                        Side = request.Side,
+                        Date = DateTime.Now,
+                        Trades = Trades,
+                        Price = totalValue.ToString("0.00", CultureInfo.InvariantCulture),
+                        Amount = accumulatedQuantity.ToString("0.00", CultureInfo.InvariantCulture),
+                    };
+                }
+                else
                 {
-                    Id = "mock",
-                    Market = request.Symbol,
-                    Date = DateTime.Now,
-                    Price = totalValue.ToString("0.00", CultureInfo.InvariantCulture),
-                    Amount = accumulatedQuantity.ToString("0.00", CultureInfo.InvariantCulture),
-                };
+                    return new ErrorResponse
+                    {
+                        Reason = $"No book for {request.Symbol}",
+                        Status = "error"
+                    };
+                }
             }
             else
             {
