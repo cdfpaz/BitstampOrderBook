@@ -1,0 +1,33 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use .NET Core SDK Docker image
+        uses: docker/setup-action@v3
+        with:
+          image: mcr.microsoft.com/dotnet/sdk:6.0
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build and publish
+        run: dotnet publish -c Release -o out
+
+      - name: Build runtime image
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: bzero/bitstamp-feeder:latest
+          context: .
+          dockerfile: Dockerfile
+          build-args: 
+            # Define any build arguments needed by your Dockerfile here (optional)
+
