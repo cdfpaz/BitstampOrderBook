@@ -1,3 +1,3 @@
 # BitstampOrderBook
 
-![]([https://raw.githubusercontent.com/cdfpaz/BitstampOrderBook/master/tutorial.gif)
+![](https://github.com/cdfpaz/BitstampOrderBook/blob/master/tutorial.gif)
